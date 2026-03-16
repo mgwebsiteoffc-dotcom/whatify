@@ -20,26 +20,27 @@
         <ul role="list" class="flex flex-1 flex-col gap-y-7">
             <li>
                 <ul role="list" class="-mx-2 space-y-1">
-                    @php
-                        $menuItems = [
-                            ['route' => 'dashboard', 'icon' => 'fas fa-home', 'label' => 'Dashboard'],
-                        ];
+                  @php
+    $menuItems = [
+        ['route' => 'dashboard', 'icon' => 'fas fa-home', 'label' => 'Dashboard'],
+    ];
 
-                        if (auth()->user()->isBusinessOwner() || auth()->user()->isSuperAdmin()) {
-                            $menuItems = array_merge($menuItems, [
-                                ['route' => 'wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet'],
-                                ['route' => 'team.index', 'icon' => 'fas fa-users', 'label' => 'Team'],
-                                ['route' => 'billing.plans', 'icon' => 'fas fa-credit-card', 'label' => 'Billing'],
-                            ]);
-                        }
+    if (auth()->user()->isBusinessOwner() || auth()->user()->isSuperAdmin()) {
+        $menuItems = array_merge($menuItems, [
+            ['route' => 'whatsapp.accounts.index', 'icon' => 'fab fa-whatsapp', 'label' => 'WhatsApp'],
+            ['route' => 'whatsapp.templates.index', 'icon' => 'fas fa-file-alt', 'label' => 'Templates'],
+            ['route' => 'wallet.index', 'icon' => 'fas fa-wallet', 'label' => 'Wallet'],
+            ['route' => 'team.index', 'icon' => 'fas fa-users', 'label' => 'Team'],
+            ['route' => 'billing.plans', 'icon' => 'fas fa-credit-card', 'label' => 'Billing'],
+        ]);
+    }
 
-                        $menuItems = array_merge($menuItems, [
-                            ['route' => 'notifications.index', 'icon' => 'fas fa-bell', 'label' => 'Notifications'],
-                            ['route' => 'business.edit', 'icon' => 'fas fa-building', 'label' => 'Business Profile'],
-                            ['route' => 'account.edit', 'icon' => 'fas fa-cog', 'label' => 'Settings'],
-                        ]);
-                    @endphp
-
+    $menuItems = array_merge($menuItems, [
+        ['route' => 'notifications.index', 'icon' => 'fas fa-bell', 'label' => 'Notifications'],
+        ['route' => 'business.edit', 'icon' => 'fas fa-building', 'label' => 'Business Profile'],
+        ['route' => 'account.edit', 'icon' => 'fas fa-cog', 'label' => 'Settings'],
+    ]);
+@endphp
                     @foreach($menuItems as $item)
                         <li>
                             <a href="{{ route($item['route']) }}"
@@ -54,19 +55,19 @@
             </li>
 
             {{-- Upcoming modules placeholder --}}
+      <li>
+    <div class="text-xs font-semibold leading-6 text-emerald-300 uppercase">Coming Soon</div>
+    <ul role="list" class="-mx-2 mt-2 space-y-1">
+        @foreach(['Inbox', 'Contacts', 'Campaigns', 'Automations', 'Integrations'] as $module)
             <li>
-                <div class="text-xs font-semibold leading-6 text-emerald-300 uppercase">Coming Soon</div>
-                <ul role="list" class="-mx-2 mt-2 space-y-1">
-                    @foreach(['Inbox', 'Contacts', 'Campaigns', 'Automations', 'Integrations'] as $module)
-                        <li>
-                            <span class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 text-emerald-400 opacity-50">
-                                <i class="fas fa-lock w-5 text-center"></i>
-                                {{ $module }}
-                            </span>
-                        </li>
-                    @endforeach
-                </ul>
+                <span class="group flex gap-x-3 rounded-md p-2 text-sm leading-6 text-emerald-400 opacity-50">
+                    <i class="fas fa-lock w-5 text-center"></i>
+                    {{ $module }}
+                </span>
             </li>
+        @endforeach
+    </ul>
+</li>
 
             {{-- Logout --}}
             <li class="mt-auto">

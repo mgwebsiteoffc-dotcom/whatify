@@ -61,13 +61,40 @@ Route::middleware(['auth', 'onboarding'])->group(function () {
 
     // Routes requiring active subscription
     Route::middleware(['subscription'])->group(function () {
+ // WhatsApp Accounts
+    Route::prefix('whatsapp')->name('whatsapp.')->group(function () {
 
-        // WhatsApp Accounts - Phase 2
-        // Contacts CRM - Phase 3
-        // Campaigns - Phase 3
-        // Automations - Phase 4
-        // Shared Inbox - Phase 4
-        // Integrations - Phase 5
+        // Accounts
+        Route::get('/accounts', [\App\Http\Controllers\WhatsappAccountController::class, 'index'])->name('accounts.index');
+        Route::get('/accounts/create', [\App\Http\Controllers\WhatsappAccountController::class, 'create'])->name('accounts.create');
+        Route::post('/accounts', [\App\Http\Controllers\WhatsappAccountController::class, 'store'])->name('accounts.store');
+        Route::get('/accounts/{account}', [\App\Http\Controllers\WhatsappAccountController::class, 'show'])->name('accounts.show');
+        Route::post('/accounts/{account}/sync-templates', [\App\Http\Controllers\WhatsappAccountController::class, 'syncTemplates'])->name('accounts.syncTemplates');
+        Route::post('/accounts/{account}/test-message', [\App\Http\Controllers\WhatsappAccountController::class, 'testMessage'])->name('accounts.testMessage');
+        Route::post('/accounts/{account}/disconnect', [\App\Http\Controllers\WhatsappAccountController::class, 'disconnect'])->name('accounts.disconnect');
+        Route::delete('/accounts/{account}', [\App\Http\Controllers\WhatsappAccountController::class, 'destroy'])->name('accounts.destroy');
+
+        // Templates
+        Route::get('/templates', [\App\Http\Controllers\MessageTemplateController::class, 'index'])->name('templates.index');
+        Route::get('/templates/create', [\App\Http\Controllers\MessageTemplateController::class, 'create'])->name('templates.create');
+        Route::post('/templates', [\App\Http\Controllers\MessageTemplateController::class, 'store'])->name('templates.store');
+        Route::get('/templates/{template}', [\App\Http\Controllers\MessageTemplateController::class, 'show'])->name('templates.show');
+        Route::delete('/templates/{template}', [\App\Http\Controllers\MessageTemplateController::class, 'destroy'])->name('templates.destroy');
+    });
+
+    // Quick Message Sending
+    Route::prefix('send')->name('send.')->group(function () {
+        Route::post('/text', [\App\Http\Controllers\QuickMessageController::class, 'sendText'])->name('text');
+        Route::post('/template', [\App\Http\Controllers\QuickMessageController::class, 'sendTemplate'])->name('template');
+        Route::post('/media', [\App\Http\Controllers\QuickMessageController::class, 'sendMedia'])->name('media');
+    });
+
+    // Contacts CRM - Phase 3
+    // Campaigns - Phase 3
+    // Automations - Phase 4
+    // Shared Inbox - Phase 4
+    // Integrations - Phase 5
+
 
     });
 
