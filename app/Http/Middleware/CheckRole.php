@@ -13,8 +13,25 @@ class CheckRole
             return redirect()->route('login');
         }
 
-        if (!in_array(auth()->user()->role, $roles)) {
-            abort(403, 'Unauthorized access.');
+        $userRole = auth()->user()->role;
+
+        // Super admin can access everything
+        if ($userRole === 'super_admin') {
+            return $next($request);
+        }
+
+        if (!in_array($userRole, $roles)) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+
+            // Redirect to appropriate dashboard based on role
+            return match ($userRole) {
+                'super_admin' => redirect()->route('admin.dashboard'),
+                'partner' => redirect()->route('partner.dashboard'),
+                'team_agent' => redirect()->route('inbox.index'),
+                default => redirect()->route('dashboard'),
+            };
         }
 
         return $next($request);

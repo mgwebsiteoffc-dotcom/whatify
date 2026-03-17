@@ -135,4 +135,75 @@ class ConversationApiController extends Controller
             'message' => 'Status updated.',
         ]);
     }
+
+    public function sendTemplate(Request $request, Conversation $conversation)
+{
+    $validated = $request->validate([
+        'template_id' => 'required|exists:message_templates,id',
+        'body_params' => 'nullable|array',
+    ]);
+
+    $user = $request->user();
+    $owner = $user->getBusinessOwner() ?? $user;
+
+    if ($conversation->user_id !== $owner->id) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $template = \App\Models\MessageTemplate::where('id', $validated['template_id'])
+        ->where('user_id', $owner->id)
+        ->where('status', 'approved')
+        ->firstOrFail();
+
+    $message = $this->messageService->sendTemplate(
+        $owner, $conversation->whatsappAccount, $conversation->contact,
+        $template, $validated['body_params'] ?? []
+    );
+
+    if (!$message) {
+        return response()->json(['error' => 'Failed to send.'], 422);
+    }
+
+    return response()->json(['success' => true, 'message' => $message->fresh()]);
+}
+
+public function toggleBot(Request $request, Conversation $conversation)
+{
+    $user = $request->user();
+    $owner = $user->getBusinessOwner() ?? $user;
+
+    if ($conversation->user_id !== $owner->id) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $conversation->update([
+        'is_bot_active' => !$conversation->is_bot_active,
+        'bot_paused_until' => null,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'is_bot_active' => $conversation->fresh()->is_bot_active,
+    ]);
+}
+
+public function addNote(Request $request, Conversation $conversation)
+{
+    $validated = $request->validate(['note' => 'required|string|max:2000']);
+
+    $user = $request->user();
+    $owner = $user->getBusinessOwner() ?? $user;
+
+    if ($conversation->user_id !== $owner->id) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $note = \App\Models\InternalNote::create([
+        'conversation_id' => $conversation->id,
+        'user_id' => $user->id,
+        'note' => $validated['note'],
+    ]);
+
+    return response()->json(['success' => true, 'note' => $note->load('user:id,name')]);
+}
 }

@@ -82,7 +82,7 @@ class WhatsappAccountController extends Controller
             // Register webhook subscription
             $this->whatsappApi->registerWebhook(
                 $account,
-                route('webhook.whatsapp')
+                url('/api/webhook/whatsapp')
             );
 
             // Sync templates
@@ -175,4 +175,65 @@ class WhatsappAccountController extends Controller
         return redirect()->route('whatsapp.accounts.index')
             ->with('success', 'WhatsApp account removed.');
     }
+
+    public function embeddedSignup()
+{
+    $user = auth()->user();
+
+    if (!$user->canUseFeature('whatsapp_numbers')) {
+        return back()->with('error', 'WhatsApp number limit reached. Please upgrade your plan.');
+    }
+
+    $appId = config('whatify.whatsapp.app_id');
+    $configId = config('whatify.whatsapp.config_id', '');
+
+    return view('whatsapp.accounts.embedded-signup', compact('appId', 'configId'));
+}
+
+public function embeddedSignupCallback(Request $request)
+{
+    $validated = $request->validate([
+        'code' => 'required|string',
+    ]);
+
+    $user = auth()->user();
+
+    try {
+        // Exchange code for access token
+        $response = Http::get('https://graph.facebook.com/v18.0/oauth/access_token', [
+            'client_id' => config('whatify.whatsapp.app_id'),
+            'client_secret' => config('whatify.whatsapp.app_secret'),
+            'code' => $validated['code'],
+        ]);
+
+        if (!$response->successful()) {
+            return redirect()->route('whatsapp.accounts.index')
+                ->with('error', 'Failed to exchange code for token. Please try again.');
+        }
+
+        $accessToken = $response->json('access_token');
+
+        // Get WABA info using debug token or shared WABAs endpoint
+        $wabaResponse = Http::withToken($accessToken)
+            ->get('https://graph.facebook.com/v18.0/debug_token', [
+                'input_token' => $accessToken,
+            ]);
+
+        // Get shared WABAs
+        $sharedWabaResponse = Http::withToken($accessToken)
+            ->get('https://graph.facebook.com/v18.0/me/businesses');
+
+        // For now, store the token and let user configure manually
+        // In production, auto-detect WABA and phone numbers
+
+        return redirect()->route('whatsapp.accounts.create')
+            ->with('success', 'Facebook login successful! Please complete the setup below.')
+            ->with('access_token', $accessToken);
+
+    } catch (\Exception $e) {
+        return redirect()->route('whatsapp.accounts.index')
+            ->with('error', 'Signup failed: ' . $e->getMessage());
+    }
+}
+
 }

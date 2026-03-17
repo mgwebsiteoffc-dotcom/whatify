@@ -147,6 +147,8 @@ class User extends Authenticatable
         return $this->role === 'business_owner';
     }
 
+    
+
     public function isAgent(): bool
     {
         return $this->role === 'team_agent';

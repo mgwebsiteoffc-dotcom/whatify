@@ -16,9 +16,14 @@ class Integration extends Model
     ];
 
     protected $casts = [
-        'config' => 'encrypted:array',
-        'last_synced_at' => 'datetime',
-    ];
+    'config' => 'array',
+     'last_synced_at' => 'datetime',
+];
+
+    // protected $casts = [
+    //     'config' => 'encrypted:array',
+    //     'last_synced_at' => 'datetime',
+    // ];
 
     public function user()
     {

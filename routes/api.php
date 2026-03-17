@@ -3,6 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\ApiAuthController;
 
+// WhatsApp Webhook (no auth, no CSRF)
+Route::get('/webhook/whatsapp', [\App\Http\Controllers\Webhook\WhatsappWebhookController::class, 'verify']);
+Route::post('/webhook/whatsapp', [\App\Http\Controllers\Webhook\WhatsappWebhookController::class, 'handle']);
+
+// Payment Callbacks (no auth, no CSRF)
+Route::post('/payment/razorpay/webhook', [\App\Http\Controllers\Payment\RazorpayController::class, 'webhook'])->name('payment.razorpay.webhook');
+
 // Mobile App API
 Route::prefix('v1')->group(function () {
 
@@ -46,6 +53,33 @@ Route::prefix('v1')->group(function () {
 
         // Wallet
         Route::get('/wallet', [\App\Http\Controllers\Api\WalletApiController::class, 'index']);
+
+        // Conversations - additional endpoints
+Route::post('/conversations/{conversation}/send-template', [\App\Http\Controllers\Api\ConversationApiController::class, 'sendTemplate']);
+Route::post('/conversations/{conversation}/toggle-bot', [\App\Http\Controllers\Api\ConversationApiController::class, 'toggleBot']);
+Route::post('/conversations/{conversation}/note', [\App\Http\Controllers\Api\ConversationApiController::class, 'addNote']);
+
+// Automations
+Route::get('/automations', function (Request $request) {
+    $owner = $request->user()->getBusinessOwner() ?? $request->user();
+    return response()->json(
+        \App\Models\Automation::where('user_id', $owner->id)
+            ->select('id', 'name', 'trigger_type', 'status', 'execution_count', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+    );
+});
+
+Route::post('/automations/{automation}/toggle', function (Request $request, \App\Models\Automation $automation) {
+    $owner = $request->user()->getBusinessOwner() ?? $request->user();
+    if ($automation->user_id !== $owner->id) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    $automation->update([
+        'status' => $automation->status === 'active' ? 'inactive' : 'active',
+    ]);
+    return response()->json(['success' => true, 'status' => $automation->fresh()->status]);
+});
     });
 
     // External API (API Key auth)
@@ -55,4 +89,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/contacts', [\App\Http\Controllers\Api\ExternalApiController::class, 'contacts']);
         Route::post('/contacts', [\App\Http\Controllers\Api\ExternalApiController::class, 'createContact']);
     });
+});
+
+Route::prefix('integrations')->group(function () {
+    Route::post('/shopify/webhook/{integrationId}', [\App\Http\Controllers\Webhook\IntegrationWebhookController::class, 'shopify']);
+    Route::post('/woocommerce/webhook/{integrationId}', [\App\Http\Controllers\Webhook\IntegrationWebhookController::class, 'woocommerce']);
 });

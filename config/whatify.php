@@ -60,14 +60,14 @@ return [
         'other' => 'Other',
     ],
 
-    'whatsapp' => [
-        'api_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com/v18.0'),
-        'app_id' => env('WHATSAPP_APP_ID'),
-        'app_secret' => env('WHATSAPP_APP_SECRET'),
-        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
-        'api_version' => 'v18.0',
-    ],
-
+  'whatsapp' => [
+    'api_url' => env('WHATSAPP_API_URL', 'https://graph.facebook.com/v18.0'),
+    'app_id' => env('WHATSAPP_APP_ID'),
+    'app_secret' => env('WHATSAPP_APP_SECRET'),
+    'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+    'api_version' => 'v18.0',
+    'config_id' => env('WHATSAPP_CONFIG_ID', ''), // For embedded signup
+],
     'partner' => [
         'default_commission' => 20, // percentage
         'min_payout' => 1000,

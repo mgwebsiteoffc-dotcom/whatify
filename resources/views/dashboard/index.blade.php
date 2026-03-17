@@ -140,27 +140,27 @@
     </div>
 
     {{-- Quick Actions --}}
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <a href="{{ route('wallet.recharge') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
-                <i class="fas fa-plus-circle text-2xl text-emerald-600"></i>
-                <span class="text-sm font-medium text-gray-700">Recharge Wallet</span>
-            </a>
-            <div class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 opacity-50">
-                <i class="fas fa-paper-plane text-2xl text-gray-400"></i>
-                <span class="text-sm font-medium text-gray-400">New Campaign</span>
-            </div>
-            <div class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 opacity-50">
-                <i class="fas fa-user-plus text-2xl text-gray-400"></i>
-                <span class="text-sm font-medium text-gray-400">Add Contact</span>
-            </div>
-            <div class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 opacity-50">
-                <i class="fas fa-robot text-2xl text-gray-400"></i>
-                <span class="text-sm font-medium text-gray-400">Create Automation</span>
-            </div>
-        </div>
+<div class="bg-white rounded-lg shadow p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <a href="{{ route('wallet.recharge') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+            <i class="fas fa-plus-circle text-2xl text-emerald-600"></i>
+            <span class="text-sm font-medium text-gray-700">Recharge Wallet</span>
+        </a>
+        <a href="{{ route('campaigns.create') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+            <i class="fas fa-paper-plane text-2xl text-blue-600"></i>
+            <span class="text-sm font-medium text-gray-700">New Campaign</span>
+        </a>
+        <a href="{{ route('contacts.create') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+            <i class="fas fa-user-plus text-2xl text-purple-600"></i>
+            <span class="text-sm font-medium text-gray-700">Add Contact</span>
+        </a>
+        <a href="{{ route('contacts.import.form') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+            <i class="fas fa-file-import text-2xl text-orange-600"></i>
+            <span class="text-sm font-medium text-gray-700">Import Contacts</span>
+        </a>
     </div>
+</div>
 </div>
 
 @push('scripts')
