@@ -95,3 +95,38 @@ Route::prefix('integrations')->group(function () {
     Route::post('/shopify/webhook/{integrationId}', [\App\Http\Controllers\Webhook\IntegrationWebhookController::class, 'shopify']);
     Route::post('/woocommerce/webhook/{integrationId}', [\App\Http\Controllers\Webhook\IntegrationWebhookController::class, 'woocommerce']);
 });
+
+// =============================================
+// EXTERNAL API (API Key Authentication)
+// =============================================
+Route::middleware('api.key')->prefix('v1/external')->group(function () {
+
+    // Messages
+    Route::post('/send-message', [\App\Http\Controllers\Api\ExternalApiController::class, 'sendMessage']);
+    Route::post('/send-template', [\App\Http\Controllers\Api\ExternalApiController::class, 'sendTemplate']);
+
+    // Contacts
+    Route::get('/contacts', [\App\Http\Controllers\Api\ExternalApiController::class, 'contacts']);
+    Route::post('/contacts', [\App\Http\Controllers\Api\ExternalApiController::class, 'createContact']);
+    Route::get('/contacts/{contact}', [\App\Http\Controllers\Api\ExternalApiController::class, 'showContact']);
+    Route::put('/contacts/{contact}', [\App\Http\Controllers\Api\ExternalApiController::class, 'updateContact']);
+
+    // Conversations
+    Route::get('/conversations', [\App\Http\Controllers\Api\ExternalApiController::class, 'conversations']);
+    Route::get('/conversations/{conversation}/messages', [\App\Http\Controllers\Api\ExternalApiController::class, 'conversationMessages']);
+
+    // Campaigns
+    Route::get('/campaigns', [\App\Http\Controllers\Api\ExternalApiController::class, 'campaigns']);
+    Route::get('/campaigns/{campaign}', [\App\Http\Controllers\Api\ExternalApiController::class, 'campaignShow']);
+
+    // Templates
+    Route::get('/templates', [\App\Http\Controllers\Api\ExternalApiController::class, 'templates']);
+
+    // Wallet
+    Route::get('/wallet/balance', [\App\Http\Controllers\Api\ExternalApiController::class, 'walletBalance']);
+
+    // Webhook test
+    Route::get('/ping', function () {
+        return response()->json(['status' => 'ok', 'timestamp' => now()->toIso8601String()]);
+    });
+});

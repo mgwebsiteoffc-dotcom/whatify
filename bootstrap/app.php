@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'feature' => \App\Http\Middleware\CheckFeatureLimit::class,
             'wallet' => \App\Http\Middleware\CheckWalletBalance::class,
             'onboarding' => \App\Http\Middleware\OnboardingCheck::class,
+                'api.key' => \App\Http\Middleware\AuthenticateApiKey::class,
         ]);
 
         $middleware->web(append: [

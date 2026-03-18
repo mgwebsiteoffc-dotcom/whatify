@@ -35,6 +35,8 @@ Route::name('website.')->group(function () {
 
     // Sitemap
     Route::get('/sitemap.xml', [\App\Http\Controllers\Website\SitemapController::class, 'index'])->name('sitemap');
+    Route::get('/api-docs', [\App\Http\Controllers\Website\HomeController::class, 'apiDocs'])->name('api-docs');
+
 });
 
 // =============================================
@@ -144,6 +146,13 @@ Route::middleware(['auth', 'onboarding'])->group(function () {
         Route::get('/wallet/recharge', [\App\Http\Controllers\WalletController::class, 'recharge'])->name('wallet.recharge');
         Route::post('/wallet/recharge', [\App\Http\Controllers\WalletController::class, 'processRecharge'])->name('wallet.processRecharge');
         Route::get('/wallet/transactions', [\App\Http\Controllers\WalletController::class, 'transactions'])->name('wallet.transactions');
+
+            // API Keys
+    Route::get('/settings/api-keys', [\App\Http\Controllers\ApiKeyController::class, 'index'])->name('settings.api-keys');
+    Route::post('/settings/api-keys', [\App\Http\Controllers\ApiKeyController::class, 'store'])->name('settings.api-keys.store');
+    Route::post('/settings/api-keys/{apiKey}/toggle', [\App\Http\Controllers\ApiKeyController::class, 'toggleStatus'])->name('settings.api-keys.toggle');
+    Route::post('/settings/api-keys/{apiKey}/regenerate', [\App\Http\Controllers\ApiKeyController::class, 'regenerate'])->name('settings.api-keys.regenerate');
+    Route::delete('/settings/api-keys/{apiKey}', [\App\Http\Controllers\ApiKeyController::class, 'destroy'])->name('settings.api-keys.destroy');
     });
 
     Route::middleware(['subscription'])->group(function () {
@@ -198,17 +207,19 @@ Route::middleware(['auth', 'onboarding'])->group(function () {
         Route::post('/campaigns/{campaign}/duplicate', [\App\Http\Controllers\CampaignController::class, 'duplicate'])->name('campaigns.duplicate');
 
         // Automations
-        Route::prefix('automations')->name('automations.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\AutomationController::class, 'index'])->name('index');
-            Route::get('/create', [\App\Http\Controllers\AutomationController::class, 'create'])->name('create');
-            Route::post('/', [\App\Http\Controllers\AutomationController::class, 'store'])->name('store');
-            Route::get('/{automation}', [\App\Http\Controllers\AutomationController::class, 'show'])->name('show');
-            Route::get('/{automation}/builder', [\App\Http\Controllers\AutomationController::class, 'builder'])->name('builder');
-            Route::post('/{automation}/save-flow', [\App\Http\Controllers\AutomationController::class, 'saveFlow'])->name('saveFlow');
-            Route::post('/{automation}/toggle', [\App\Http\Controllers\AutomationController::class, 'toggleStatus'])->name('toggle');
-            Route::post('/{automation}/duplicate', [\App\Http\Controllers\AutomationController::class, 'duplicate'])->name('duplicate');
-            Route::delete('/{automation}', [\App\Http\Controllers\AutomationController::class, 'destroy'])->name('destroy');
-        });
+   // Automations
+Route::prefix('automations')->name('automations.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\AutomationController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\AutomationController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\AutomationController::class, 'store'])->name('store');
+    Route::post('/use-template', [\App\Http\Controllers\AutomationController::class, 'useTemplate'])->name('useTemplate');
+    Route::get('/{automation}', [\App\Http\Controllers\AutomationController::class, 'show'])->name('show');
+    Route::get('/{automation}/builder', [\App\Http\Controllers\AutomationController::class, 'builder'])->name('builder');
+    Route::post('/{automation}/save-flow', [\App\Http\Controllers\AutomationController::class, 'saveFlow'])->name('saveFlow');
+    Route::post('/{automation}/toggle', [\App\Http\Controllers\AutomationController::class, 'toggleStatus'])->name('toggle');
+    Route::post('/{automation}/duplicate', [\App\Http\Controllers\AutomationController::class, 'duplicate'])->name('duplicate');
+    Route::delete('/{automation}', [\App\Http\Controllers\AutomationController::class, 'destroy'])->name('destroy');
+});
 
         // Integrations
         Route::prefix('integrations')->name('integrations.')->group(function () {

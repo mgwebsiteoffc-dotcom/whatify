@@ -57,4 +57,9 @@ class HomeController extends Controller
     public function privacy() { return view('website.legal.privacy'); }
     public function terms() { return view('website.legal.terms'); }
     public function refund() { return view('website.legal.refund'); }
+
+    public function apiDocs()
+{
+    return view('website.api-docs');
+}
 }

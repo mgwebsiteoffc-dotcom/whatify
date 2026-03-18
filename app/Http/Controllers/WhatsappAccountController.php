@@ -7,6 +7,7 @@ use App\Jobs\SyncTemplates;
 use App\Services\WhatsappApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class WhatsappAccountController extends Controller
 {
@@ -16,7 +17,10 @@ class WhatsappAccountController extends Controller
 
     public function index()
     {
-        $accounts = auth()->user()->whatsappAccounts()
+        $user = auth()->user();
+        $owner = $user->getBusinessOwner() ?? $user;
+
+        $accounts = WhatsappAccount::where('user_id', $owner->id)
             ->with('business')
             ->withCount('conversations')
             ->orderBy('created_at', 'desc')
@@ -29,7 +33,6 @@ class WhatsappAccountController extends Controller
     {
         $user = auth()->user();
 
-        // Check plan limit
         if (!$user->canUseFeature('whatsapp_numbers')) {
             return back()->with('error', 'WhatsApp number limit reached. Please upgrade your plan.');
         }
@@ -50,14 +53,18 @@ class WhatsappAccountController extends Controller
 
         $user = auth()->user();
 
-        // Check limit
         if (!$user->canUseFeature('whatsapp_numbers')) {
             return back()->with('error', 'WhatsApp number limit reached.');
         }
 
+        $business = $user->business;
+        if (!$business) {
+            return back()->with('error', 'Please create a business profile first.');
+        }
+
         $account = WhatsappAccount::create([
             'user_id' => $user->id,
-            'business_id' => $user->business->id,
+            'business_id' => $business->id,
             'phone_number' => $validated['phone_number'],
             'phone_number_id' => $validated['phone_number_id'],
             'waba_id' => $validated['waba_id'],
@@ -68,7 +75,6 @@ class WhatsappAccountController extends Controller
             'webhook_secret' => Str::random(32),
         ]);
 
-        // Verify connection
         $phoneInfo = $this->whatsappApi->getPhoneNumberInfo($account);
 
         if ($phoneInfo['success']) {
@@ -79,13 +85,7 @@ class WhatsappAccountController extends Controller
                 'connected_at' => now(),
             ]);
 
-            // Register webhook subscription
-            $this->whatsappApi->registerWebhook(
-                $account,
-                url('/api/webhook/whatsapp')
-            );
-
-            // Sync templates
+            $this->whatsappApi->registerWebhook($account, url('/api/webhook/whatsapp'));
             SyncTemplates::dispatch($account)->onQueue('default');
 
             \App\Services\ActivityLogger::log('whatsapp_account_connected', 'WhatsappAccount', $account->id);
@@ -102,13 +102,17 @@ class WhatsappAccountController extends Controller
 
     public function show(WhatsappAccount $account)
     {
-        $this->authorize('view', $account);
+        $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
+        abort_if($account->user_id !== $owner->id, 403, 'Unauthorized');
 
-        // Get phone info
-        $phoneInfo = $this->whatsappApi->getPhoneNumberInfo($account);
-        $businessProfile = $this->whatsappApi->getBusinessProfile($account);
+        $phoneInfo = [];
+        $businessProfile = [];
 
-        // Stats
+        if ($account->isConnected()) {
+            $phoneInfo = $this->whatsappApi->getPhoneNumberInfo($account);
+            $businessProfile = $this->whatsappApi->getBusinessProfile($account);
+        }
+
         $stats = [
             'total_messages' => $account->messages()->count(),
             'messages_today' => $account->messages()->whereDate('created_at', today())->count(),
@@ -122,7 +126,8 @@ class WhatsappAccountController extends Controller
 
     public function syncTemplates(WhatsappAccount $account)
     {
-        $this->authorize('update', $account);
+        $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
+        abort_if($account->user_id !== $owner->id, 403, 'Unauthorized');
 
         SyncTemplates::dispatch($account)->onQueue('default');
 
@@ -131,7 +136,8 @@ class WhatsappAccountController extends Controller
 
     public function testMessage(Request $request, WhatsappAccount $account)
     {
-        $this->authorize('update', $account);
+        $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
+        abort_if($account->user_id !== $owner->id, 403, 'Unauthorized');
 
         $validated = $request->validate([
             'phone' => 'required|string|min:10',
@@ -148,12 +154,13 @@ class WhatsappAccountController extends Controller
             return back()->with('success', "Test message sent! WAMID: {$result['wamid']}");
         }
 
-        return back()->with('error', "Failed: {$result['error_message']}");
+        return back()->with('error', "Failed: " . ($result['error_message'] ?? 'Unknown error'));
     }
 
     public function disconnect(WhatsappAccount $account)
     {
-        $this->authorize('delete', $account);
+        $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
+        abort_if($account->user_id !== $owner->id, 403, 'Unauthorized');
 
         $account->update([
             'status' => 'disconnected',
@@ -168,7 +175,8 @@ class WhatsappAccountController extends Controller
 
     public function destroy(WhatsappAccount $account)
     {
-        $this->authorize('delete', $account);
+        $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
+        abort_if($account->user_id !== $owner->id, 403, 'Unauthorized');
 
         $account->delete();
 
@@ -177,63 +185,46 @@ class WhatsappAccountController extends Controller
     }
 
     public function embeddedSignup()
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    if (!$user->canUseFeature('whatsapp_numbers')) {
-        return back()->with('error', 'WhatsApp number limit reached. Please upgrade your plan.');
-    }
-
-    $appId = config('whatify.whatsapp.app_id');
-    $configId = config('whatify.whatsapp.config_id', '');
-
-    return view('whatsapp.accounts.embedded-signup', compact('appId', 'configId'));
-}
-
-public function embeddedSignupCallback(Request $request)
-{
-    $validated = $request->validate([
-        'code' => 'required|string',
-    ]);
-
-    $user = auth()->user();
-
-    try {
-        // Exchange code for access token
-        $response = Http::get('https://graph.facebook.com/v18.0/oauth/access_token', [
-            'client_id' => config('whatify.whatsapp.app_id'),
-            'client_secret' => config('whatify.whatsapp.app_secret'),
-            'code' => $validated['code'],
-        ]);
-
-        if (!$response->successful()) {
-            return redirect()->route('whatsapp.accounts.index')
-                ->with('error', 'Failed to exchange code for token. Please try again.');
+        if (!$user->canUseFeature('whatsapp_numbers')) {
+            return back()->with('error', 'WhatsApp number limit reached. Please upgrade your plan.');
         }
 
-        $accessToken = $response->json('access_token');
+        $appId = config('whatify.whatsapp.app_id');
+        $configId = config('whatify.whatsapp.config_id', '');
 
-        // Get WABA info using debug token or shared WABAs endpoint
-        $wabaResponse = Http::withToken($accessToken)
-            ->get('https://graph.facebook.com/v18.0/debug_token', [
-                'input_token' => $accessToken,
+        return view('whatsapp.accounts.embedded-signup', compact('appId', 'configId'));
+    }
+
+    public function embeddedSignupCallback(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string',
+        ]);
+
+        try {
+            $response = Http::get('https://graph.facebook.com/v18.0/oauth/access_token', [
+                'client_id' => config('whatify.whatsapp.app_id'),
+                'client_secret' => config('whatify.whatsapp.app_secret'),
+                'code' => $validated['code'],
             ]);
 
-        // Get shared WABAs
-        $sharedWabaResponse = Http::withToken($accessToken)
-            ->get('https://graph.facebook.com/v18.0/me/businesses');
+            if (!$response->successful()) {
+                return redirect()->route('whatsapp.accounts.index')
+                    ->with('error', 'Failed to exchange code for token.');
+            }
 
-        // For now, store the token and let user configure manually
-        // In production, auto-detect WABA and phone numbers
+            $accessToken = $response->json('access_token');
 
-        return redirect()->route('whatsapp.accounts.create')
-            ->with('success', 'Facebook login successful! Please complete the setup below.')
-            ->with('access_token', $accessToken);
+            return redirect()->route('whatsapp.accounts.create')
+                ->with('success', 'Facebook login successful! Complete setup below.')
+                ->with('access_token', $accessToken);
 
-    } catch (\Exception $e) {
-        return redirect()->route('whatsapp.accounts.index')
-            ->with('error', 'Signup failed: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->route('whatsapp.accounts.index')
+                ->with('error', 'Signup failed: ' . $e->getMessage());
+        }
     }
-}
-
 }

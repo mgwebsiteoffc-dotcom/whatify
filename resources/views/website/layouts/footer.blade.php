@@ -61,6 +61,8 @@
                     <li><a href="{{ route('website.blog') }}" class="hover:text-emerald-400 transition-colors">Blog</a></li>
                     <li><a href="{{ route('website.contact') }}" class="hover:text-emerald-400 transition-colors">Contact</a></li>
                     <li><a href="{{ route('website.about') }}" class="hover:text-emerald-400 transition-colors">About Us</a></li>
+                    <li><a href="{{ route('website.api-docs') }}" class="hover:text-emerald-400 transition-colors">API Documentation</a></li>
+
                 </ul>
             </div>
 

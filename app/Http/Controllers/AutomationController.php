@@ -37,17 +37,25 @@ class AutomationController extends Controller
         return view('automations.index', compact('automations', 'stats'));
     }
 
-    public function create()
-    {
-        $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
+public function create()
+{
+    $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
 
-        if (!$owner->canUseFeature('automation_flows')) {
-            return back()->with('error', 'Automation limit reached. Please upgrade your plan.');
-        }
-
-        return view('automations.create');
+    if (!$owner->canUseFeature('automation_flows')) {
+        return back()->with('error', 'Automation limit reached. Please upgrade your plan.');
     }
 
+    $industry = $owner->business?->industry ?? 'other';
+
+    $industryTemplates = \App\Models\IndustryTemplate::where('is_active', true)
+        ->where(function ($q) use ($industry) {
+            $q->where('industry', $industry)
+              ->orWhere('industry', 'ecommerce');
+        })
+        ->get();
+
+    return view('automations.create', compact('industryTemplates'));
+}
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -208,4 +216,42 @@ class AutomationController extends Controller
         $automation->delete();
         return redirect()->route('automations.index')->with('success', 'Automation deleted.');
     }
+
+    public function useTemplate(Request $request)
+{
+    $request->validate(['template_id' => 'required|exists:industry_templates,id']);
+
+    $owner = auth()->user()->getBusinessOwner() ?? auth()->user();
+
+    if (!$owner->canUseFeature('automation_flows')) {
+        return back()->with('error', 'Automation limit reached.');
+    }
+
+    $template = \App\Models\IndustryTemplate::findOrFail($request->template_id);
+
+    $automation = \App\Models\Automation::create([
+        'user_id' => $owner->id,
+        'name' => $template->name,
+        'description' => $template->description,
+        'trigger_type' => $template->trigger_type,
+        'trigger_config' => $template->trigger_config,
+        'status' => 'draft',
+        'flow_data' => $template->steps,
+    ]);
+
+    foreach ($template->steps as $index => $stepData) {
+        \App\Models\AutomationStep::create([
+            'automation_id' => $automation->id,
+            'step_id' => $stepData['step_id'] ?? 'step_' . $index,
+            'type' => $stepData['type'],
+            'config' => $stepData['config'] ?? [],
+            'next_step_id' => $stepData['next_step_id'] ?? null,
+            'branches' => $stepData['branches'] ?? null,
+            'sort_order' => $stepData['sort_order'] ?? $index,
+        ]);
+    }
+
+    return redirect()->route('automations.builder', $automation)
+        ->with('success', "Template '{$template->name}' loaded! Customize the flow and activate.");
+}
 }

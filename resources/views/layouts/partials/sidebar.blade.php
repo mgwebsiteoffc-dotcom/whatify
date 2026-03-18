@@ -133,6 +133,8 @@
                             ['notifications.index', 'fas fa-bell', 'Notifications'],
                             ['business.edit', 'fas fa-building', 'Business Profile'],
                             ['account.edit', 'fas fa-cog', 'Settings'],
+                            ['settings.api-keys', 'fas fa-key', 'API Keys'],
+                            
                         ] as [$route, $icon, $label])
                             <li>
                                 <a href="{{ route($route) }}"
