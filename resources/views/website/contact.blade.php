@@ -15,9 +15,9 @@
                 <div class="mt-10 space-y-6">
                     @foreach([
                         ['fas fa-envelope', 'Email Us', 'hello@whatify.com', 'mailto:hello@whatify.com'],
-                        ['fab fa-whatsapp', 'WhatsApp', '+91 99999 99999', 'https://wa.me/919999999999'],
-                        ['fas fa-clock', 'Working Hours', 'Mon-Sat, 10 AM - 7 PM IST', null],
-                        ['fas fa-map-marker-alt', 'Office', 'Mumbai, India', null],
+                        ['fab fa-whatsapp', 'WhatsApp', '+91 7275013628', 'https://wa.me/917275013628'],
+                        ['fas fa-clock', 'Working Hours', 'Mon-Fri, 10 AM - 6 PM IST', null],
+                        ['fas fa-map-marker-alt', 'Office', 'Lucknow, India', 226010],
                     ] as [$icon, $label, $value, $link])
                         <div class="flex items-start gap-4">
                             <div class="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">

@@ -14,11 +14,11 @@ class PartnerController extends Controller
     public function dashboard()
     {
         $user = auth()->user();
-        $partner = Partner::where('user_id', $user->id)->firstOrFail();
+        $partner = Partner::where('user_id', $user->id)->first();
 
-         if (!$partner) {
-        return redirect()->route('partner.apply');
-    }
+        if (!$partner) {
+            return redirect()->route('partner.apply');
+        }
 
         $stats = [
             'total_referrals' => $partner->total_referrals,
@@ -36,7 +36,7 @@ class PartnerController extends Controller
             ->get();
 
         $referredUsers = User::where('partner_id', $user->id)
-            ->with(['wallet:id,user_id,balance,total_recharged', 'subscription.plan:id,name'])
+            ->with(['wallet:id,user_id,balance,total_recharged'])
             ->orderBy('created_at', 'desc')
             ->limit(20)
             ->get();
@@ -51,10 +51,62 @@ class PartnerController extends Controller
         return view('partner.dashboard', compact('partner', 'stats', 'recentCommissions', 'referredUsers', 'monthlyEarnings'));
     }
 
+    public function apply()
+    {
+        $user = auth()->user();
+
+        // Already a partner - go to dashboard
+        if ($user->partner) {
+            return redirect()->route('partner.dashboard');
+        }
+
+        return view('partner.apply');
+    }
+
+    public function submitApplication(Request $request)
+    {
+        $validated = $request->validate([
+            'company_name' => 'required|string|max:255',
+            'type' => 'required|in:agency,reseller,influencer,technology,freelancer,consultant',
+            'website' => 'nullable|url|max:255',
+            'description' => 'nullable|string|max:2000',
+        ]);
+
+        $user = auth()->user();
+
+        if ($user->partner) {
+            return redirect()->route('partner.dashboard')
+                ->with('info', 'You already have a partner account.');
+        }
+
+        Partner::create([
+            'user_id' => $user->id,
+            'company_name' => $validated['company_name'],
+            'type' => $validated['type'],
+            'referral_code' => strtoupper(Str::random(8)),
+            'commission_rate' => config('whatify.partner.default_commission', 20),
+            'status' => 'pending',
+            'payout_details' => [],
+        ]);
+
+        // Update role if not already partner
+        if ($user->role === 'business_owner') {
+            // Keep as business_owner but they can access partner features via relationship
+            // OR switch to partner role if they prefer
+        }
+
+        return redirect()->route('partner.dashboard')
+            ->with('success', 'Partner application submitted! We will review it within 24 hours.');
+    }
+
     public function payouts()
     {
         $user = auth()->user();
-        $partner = Partner::where('user_id', $user->id)->firstOrFail();
+        $partner = Partner::where('user_id', $user->id)->first();
+
+        if (!$partner) {
+            return redirect()->route('partner.apply');
+        }
 
         $payouts = PartnerPayout::where('partner_id', $partner->id)
             ->orderBy('created_at', 'desc')
@@ -95,7 +147,11 @@ class PartnerController extends Controller
     public function settings()
     {
         $user = auth()->user();
-        $partner = Partner::where('user_id', $user->id)->firstOrFail();
+        $partner = Partner::where('user_id', $user->id)->first();
+
+        if (!$partner) {
+            return redirect()->route('partner.apply');
+        }
 
         return view('partner.settings', compact('partner'));
     }
@@ -125,46 +181,6 @@ class PartnerController extends Controller
             ],
         ]);
 
-        return back()->with('success', 'Settings updated.');
-    }
-
-    public function apply()
-    {
-        if (auth()->user()->partner) {
-            return redirect()->route('partner.dashboard');
-        }
-
-        return view('partner.apply');
-    }
-
-    public function submitApplication(Request $request)
-    {
-        $validated = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'type' => 'required|in:agency,reseller,influencer,technology',
-            'website' => 'nullable|url',
-            'description' => 'nullable|string|max:1000',
-        ]);
-
-        $user = auth()->user();
-
-        if ($user->partner) {
-            return back()->with('error', 'You already have a partner account.');
-        }
-
-        Partner::create([
-            'user_id' => $user->id,
-            'company_name' => $validated['company_name'],
-            'type' => $validated['type'],
-            'referral_code' => strtoupper(Str::random(8)),
-            'commission_rate' => config('whatify.partner.default_commission', 20),
-            'status' => 'pending',
-            'payout_details' => [],
-        ]);
-
-        $user->update(['role' => 'partner']);
-
-        return redirect()->route('partner.dashboard')
-            ->with('success', 'Partner application submitted! We will review it shortly.');
+        return back()->with('success', 'Settings updated successfully.');
     }
 }

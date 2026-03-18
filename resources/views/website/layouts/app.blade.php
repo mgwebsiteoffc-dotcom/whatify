@@ -79,7 +79,7 @@
     @include('website.layouts.footer')
 
     {{-- WhatsApp Chat Widget --}}
-    <a href="https://wa.me/919999999999?text=Hi%2C%20I%20want%20to%20know%20about%20Whatify"
+    <a href="https://wa.me/917275013628?text=Hi%2C%20I%20want%20to%20know%20about%20Whatify"
        target="_blank"
        class="fixed bottom-6 right-6 h-14 w-14 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-600 transition-colors z-50">
         <i class="fab fa-whatsapp text-2xl"></i>

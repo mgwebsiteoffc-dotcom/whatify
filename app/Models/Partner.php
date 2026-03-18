@@ -18,7 +18,7 @@ class Partner extends Model
     ];
 
     protected $casts = [
-        'payout_details' => 'encrypted:array',
+        'payout_details' => 'array',
         'approved_at' => 'datetime',
     ];
 
